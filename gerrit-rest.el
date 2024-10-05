@@ -442,25 +442,32 @@ to CHANGENR is not locally cloned."
                         gerrit-host
                         gerrit-rest-endpoint-prefix
                         (format "/changes/%s/revisions/current/patch" changenr))))
-    (message "Opening patch of %s" changenr)
-    (setq gerrit-patch-buffer (get-buffer-create "*gerrit-patch*"))
 
+    (message "Opening patch of %s" changenr)
+
+    (setq gerrit-patch-buffer (get-buffer-create "*gerrit-patch*"))
     (with-current-buffer gerrit-patch-buffer
-      (let ((inhibit-read-only t))
+      (let ((inhibit-read-only t)
+	    (body))
         (erase-buffer)
-        (url-insert-file-contents target)
-        (base64-decode-region (point-min) (point-max))
-        (delete-trailing-whitespace))
+	(url-insert-file-contents target)
+	(base64-decode-region (point-min) (point-max))
+	(delete-trailing-whitespace)
+	(setq body (decode-coding-string
+		    (buffer-substring-no-properties (point-min) (point-max))
+		    'utf-8))
+	(erase-buffer)
+	(insert body))
+
       (unless buffer-read-only
-        (read-only-mode t))
+	(read-only-mode t))
       ;; using magit-diff-mode would be nice here, but it doesn't work.
       (unless (bound-and-true-p diff-mode)
-        (diff-mode))
+	(diff-mode))
       ;; currently [TAB] is bound to diff-hunk-next. Do we want to change it
       ;; to `outline-cycle'?
       ;; beginning with emacs 28 set outline-minor-mode-cycle to t.
       (outline-minor-mode))
-
     (switch-to-buffer gerrit-patch-buffer)))
 
 
